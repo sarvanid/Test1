@@ -22,7 +22,16 @@ pipeline {
             sh "mvn versions:set -DnewVersion=$PREVIEW_VERSION"
             sh "mvn install"
             sh 'export VERSION=$PREVIEW_VERSION && skaffold build -f skaffold.yaml'
-
+			 agent {
+    label "jenkins-maven"
+  }
+  environment {
+    ORG               = 'sarvanid'
+    APP_NAME          = 'nexus'
+    CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
+    MAVEN_HOME        = '$M2_HOME'
+    JAVA_HOME         = "/usr/lib/jvm/java"
+  }
 
             sh "jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:$PREVIEW_VERSION"
           }
