@@ -55,7 +55,7 @@ pipeline {
           // TODO
           //sh "mvn versions:set -DnewVersion=\$(cat VERSION)"
         }
-        dir ('./charts/REPLACE_ME_APP_NAME') {
+        dir ('./charts/nexus') {
           container('gradle') {
             sh "make tag"
           }
@@ -74,7 +74,7 @@ pipeline {
         branch 'master'
       }
       steps {
-        dir ('./charts/REPLACE_ME_APP_NAME') {
+        dir ('./charts/nexus') {
           container('gradle') {
             sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
