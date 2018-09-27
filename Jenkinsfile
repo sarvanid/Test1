@@ -1,12 +1,12 @@
 pipeline {
   agent {
-    label "jenkins-maven"
+    label "jenkins-gradle"
   }
   environment {
     ORG               = 'sarvanid'
     APP_NAME          = 'nexus'
     CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
-    MAVEN_HOME        = '$M2_HOME'
+    GRADLE_HOME       = "/opt/gradle/bin/gradle"
     JAVA_HOME         = "/usr/lib/jvm/java"
   }
   stages {
@@ -20,18 +20,18 @@ pipeline {
         HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
       }
       steps {
-       // configArtifactoryStage()
-        container('maven') {
-          runMaven("versions:set -DnewVersion=" + "$PREVIEW_VERSION", null)
-          runMaven("install", null)
+        //configArtifactory()
+        container('gradle') {
+          // TODO
+          //sh "mvn versions:set -DnewVersion=$PREVIEW_VERSION"
+          runGradle()
           sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
-			sh "jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:$PREVIEW_VERSION"
-         // sh "jx step validate --min-jx-version 1.2.36"
-          //sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
+          sh "jx step validate --min-jx-version 1.2.36"
+          sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
         }
 
         dir ('./charts/preview') {
-          container('maven') {
+          container('gradle') {
             sh "make preview"
             sh "jx preview --app $APP_NAME --dir ../.."
           }
@@ -43,31 +43,29 @@ pipeline {
         branch 'master'
       }
       steps {
-        //configArtifactoryStage()
-        container('maven') {
+        //configArtifactory()
+        container('gradle') {
           // ensure we're not on a detached head
           sh "git checkout master"
           sh "git config --global credential.helper store"
-         // sh "jx step validate --min-jx-version 1.1.73"
+          sh "jx step validate --min-jx-version 1.1.73"
           sh "jx step git credentials"
           // so we can retrieve the version in later steps
           sh "echo \$(jx-release-version) > VERSION"
-          runMaven("versions:set -DnewVersion=\$(jx-release-version)", null)
+          // TODO
+          //sh "mvn versions:set -DnewVersion=\$(cat VERSION)"
         }
-        dir ('./charts/nexus') {
-          container('maven') {
+        dir ('./charts/REPLACE_ME_APP_NAME') {
+          container('gradle') {
             sh "make tag"
           }
         }
-        container('maven') {
-          //deploy()
+        container('gradle') {
+          runGradle()
 
-         sh 'mvn clean deploy'
-
-            sh 'export VERSION=`cat VERSION` && skaffold build -f skaffold.yaml'
-
-
-            sh "jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:\$(cat VERSION)"
+          sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
+          sh "jx step validate --min-jx-version 1.2.36"
+          sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
         }
       }
     }
@@ -76,8 +74,8 @@ pipeline {
         branch 'master'
       }
       steps {
-        dir ('./charts/nexus') {
-          container('maven') {
+        dir ('./charts/REPLACE_ME_APP_NAME') {
+          container('gradle') {
             sh 'jx step changelog --version v\$(cat ../../VERSION)'
 
             // release the helm chart
@@ -94,10 +92,11 @@ pipeline {
     always {
       cleanWs()
     }
-    failure {
-      input """Pipeline failed. 
-We will keep the build pod around to help you diagnose any failures. 
-Select Proceed or Abort to terminate the build pod"""
-    }
   }
 }
+void runGradle() {
+  script {
+    
+      sh "gradle clean build"
+    }
+  }
