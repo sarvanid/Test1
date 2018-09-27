@@ -6,6 +6,8 @@ pipeline {
       ORG               = 'sarvanid'
       APP_NAME          = 'nexus'
       CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
+	  MAVEN_HOME        = '$M2_HOME'
+	 JAVA_HOME         = "/usr/lib/jvm/java"
     }
     stages {
       stage('CI Build and push snapshot') {
