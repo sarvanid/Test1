@@ -22,8 +22,8 @@ pipeline {
         steps {
           configArtifactoryStage()
           container('maven') {
-            runMaven("versions:set -DnewVersion=" + "$PREVIEW_VERSION", null)
-            runMaven("install", null)
+            runMaven("versions:set -DnewVersion=" + "$PREVIEW_VERSION")
+            runMaven("install")
             sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
 
             sh "jx step validate --min-jx-version 1.2.36"
@@ -52,7 +52,7 @@ pipeline {
             sh "jx step git credentials"
             // so we can retrieve the version in later steps
             sh "echo \$(jx-release-version) > VERSION"
-            runMaven("versions:set -DnewVersion=\$(jx-release-version)", null)
+            runMaven("versions:set -DnewVersion=\$(jx-release-version)")
           }
           dir ('./charts/nexus') {
            container('maven') {
@@ -104,7 +104,7 @@ Select Proceed or Abort to terminate the build pod"""
   //  }
 //}
 
-void runMaven(goals, buildInfo) {
+void runMaven(goals) {
     script {
       
         sh "mvn " + goals
@@ -115,7 +115,7 @@ void runMaven(goals, buildInfo) {
 void deploy() {
     script {
       
-        runMaven("clean deploy", null)
+        runMaven("clean deploy")
       }
     }
 
